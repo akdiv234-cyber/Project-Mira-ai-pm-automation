@@ -1,1 +1,1581 @@
 
+{
+  "name": "Nexoara - AI project Planning & Governance",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1920,
+        -1408
+      ],
+      "id": "f5cef317-6290-4147-94bc-015c1950f5fa",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1312,
+        -1936
+      ],
+      "id": "ef3da83d-ce62-4911-96c3-00bb59bbbb23",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "M3J67zXswMj0fopl",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -704,
+        -1152
+      ],
+      "id": "bf539b75-1a18-4d96-ab4c-a890890be2e5",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are the Planning Agent for Nexora.\n\nCreate a project delivery plan using the project context\nprovided to you.\n\nGenerate work items for:\n\n- Epics\n- Features\n- User Stories\n- Tasks\n\nFor every work item provide:\n\n- id\n- type\n- title\n- description\n- ownerRole\n- priority\n- startWeek\n- endWeek\n- dependencies\n- acceptanceCriteria\n\nPriority must be an integer from 1 to 4.\n\nstartWeek and endWeek must be integers.\n\ndependencies must always be an array of strings.\nIf there are no dependencies, return an empty array.\n\nDo not return Markdown.\nDo not return explanations.\nDo not wrap the response in ```json.\nReturn only the structured object required by the output parser.\n\nThe last part is important",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -416,
+        -1904
+      ],
+      "id": "661f7f0a-3180-40dc-969e-687705d4be6d",
+      "name": "Planning Agent",
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "{{ JSON.stringify($json.projectInput, null, 2) }}",
+        "options": {
+          "systemMessage": "You are the Project Context Agent for Nexora.\n\nYou will receive project information extracted from an Excel file.\n\nYour responsibility is to analyze the provided project data and\ncreate a standardized project context for downstream AI agents.\n\nDo not ask the user to upload an Excel file.\nThe Excel data is already provided in the input.\n\nExtract and normalize:\n\n1. Project name\n2. Client name\n3. Business objective\n4. Project duration\n5. Major capabilities\n6. Project phases\n7. Team roles\n8. Milestones\n9. Dependencies\n10. Constraints\n11. Existing risks\n12. Governance requirements\n\nDo not invent missing information.\nUse \"Not Provided\" for missing fields.\n\nReturn structured JSON only."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -816,
+        -1824
+      ],
+      "id": "042d7e24-c3ab-42fb-815e-9b7520054be4",
+      "name": "Project Context Agent"
+    },
+    {
+      "parameters": {
+        "operation": "xls",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.2,
+      "position": [
+        -1200,
+        -1504
+      ],
+      "id": "566343b7-b88f-47ab-92e2-a42213fc8e4a",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(item => item.json);\n\nreturn [\n  {\n    json: {\n      projectInput: rows,\n      totalRecords: rows.length\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        -1312
+      ],
+      "id": "9c86f414-5304-43f0-b4dc-1b87934ecfaf",
+      "name": "Prepare Project code input"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -368,
+        -1168
+      ],
+      "id": "f5f84577-025e-4920-bba4-34364134af11",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"workItems\": [\n    {\n      \"id\": \"WI-001\",\n      \"type\": \"Epic\",\n      \"title\": \"AI Adoption Program\",\n      \"description\": \"\",\n      \"ownerRole\": \"AI Program Manager\",\n      \"priority\": 1,\n      \"startWeek\": 1,\n      \"endWeek\": 24,\n      \"dependencies\": [],\n      \"acceptanceCriteria\": \"\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -160,
+        -1088
+      ],
+      "id": "a95594a8-d721-4c21-869f-66e971c2db02",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are the Risk Management Agent for Nexora.\n\nAnalyze the project plan and identify delivery, technical,\ndata, security, resource, dependency and business risks.\n\nFor every risk provide:\n\n- Risk ID\n- Category\n- Description\n- Probability\n- Impact\n- Risk Score\n- Mitigation\n- Trigger\n- Risk Owner\n- Status\n- Related Work Item\n\nUse Low, Medium and High probability/impact.\n\nCalculate:\n\nRisk Score = Probability × Impact\n\nReturn structured JSON only.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        64,
+        -1776
+      ],
+      "id": "5d6801f2-5e93-49b9-8a4d-cd1769ebe26a",
+      "name": "Risk Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        -1216
+      ],
+      "id": "71f85495-ae9f-4369-8c65-cfd25c0018ec",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1vpma3WOkpkHVahAThmB5WxIrk57lGk7J",
+            "mode": "list",
+            "cachedResultName": "Project Mira Input",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1vpma3WOkpkHVahAThmB5WxIrk57lGk7J"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1568,
+        -1712
+      ],
+      "id": "fe74d1b9-44f7-4ba1-b2bd-4f46722ebaf0",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "M3J67zXswMj0fopl",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"risks\": [\n    {\n      \"riskId\": \"R-001\",\n      \"category\": \"Data\",\n      \"description\": \"Historical demand data may be incomplete\",\n      \"probability\": \"High\",\n      \"impact\": \"High\",\n      \"riskScore\": 9,\n      \"mitigation\": \"Perform data quality assessment during discovery\",\n      \"trigger\": \"Missing historical records\",\n      \"riskOwner\": \"Data Lead\",\n      \"status\": \"Open\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        176,
+        -1344
+      ],
+      "id": "d937adab-c798-4ffd-91e0-41be0d430b18",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseIfNeeded(value) {\n  if (typeof value === 'string') {\n    try {\n      return JSON.parse(value);\n    } catch (e) {\n      return value;\n    }\n  }\n  return value;\n}\n\nconst planning = parseIfNeeded(\n  $('Planning Agent').first().json.output\n);\n\nconst risk = parseIfNeeded(\n  $('Risk Agent').first().json.output\n);\n\nreturn [\n  {\n    json: {\n      planningOutput: planning,\n      riskOutput: risk\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        -1600
+      ],
+      "id": "9da312f0-9998-4c06-b8e7-4bb0aa1888f1",
+      "name": "Prepare Validation Input code"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        512,
+        -1312
+      ],
+      "id": "f50a6779-041f-4d6a-be5d-ca16afa36df5",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst raw = $json.output;\n\nlet parsed;\n\ntry {\n  parsed = typeof raw === 'string'\n    ? JSON.parse(raw)\n    : raw;\n} catch (error) {\n  throw new Error('Validation Agent returned invalid JSON: ' + error.message);\n}\n\nreturn {\n  json: {\n    ...$json,\n    ...parsed,\n    validationRaw: raw\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        -1456
+      ],
+      "id": "58508d7e-a80b-477b-bbc8-20bb5a89a355",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "a81ff32f-25e7-4c9b-b404-bdc2ebb80a70",
+              "leftValue": "{{ $json.validationStatus }}",
+              "rightValue": "Pass",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1424,
+        -1904
+      ],
+      "id": "50e24391-15da-42df-9605-90cecbacefd5",
+      "name": "Check PASS Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "963dceba-9903-477b-9e86-8d4b8ad7263a",
+              "leftValue": "={{ String($json.validationStatus ?? '').trim().toUpperCase() }}",
+              "rightValue": "WARNING",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1440,
+        -1552
+      ],
+      "id": "0b06411f-ec29-413b-8af4-3054de706e19",
+      "name": "Check Warning status"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=PLANNING OUTPUT:\n\n{{ JSON.stringify($json.planningOutput) }}\n\nRISK OUTPUT:\n\n{{ JSON.stringify($json.riskOutput) }}\n\nValidate both inputs and return the actual validation result using the required output format.",
+        "options": {
+          "systemMessage": "You are a Senior AI Project Management Validation Agent.\n\nAnalyze the Planning Agent output and Risk Agent output.\n\nValidate:\n1. Required work items are present.\n2. Duplicate work items do not exist.\n3. Dependencies are valid.\n4. Milestones are defined.\n5. Acceptance criteria are measurable.\n6. Risks have mitigation plans and owners.\n7. High-impact risks have corresponding mitigation activities.\n8. QA, testing, integration and security activities are included.\n9. Resource capacity and effort estimates are considered.\n\nReturn ONLY a valid JSON object.\n\nFollow this exact structure:\n\n{\n  \"validationStatus\": \"WARNING\",\n  \"issues\": [],\n  \"warnings\": [],\n  \"recommendedAction\": \"Review the identified gaps before approval.\"\n}\n\nRules:\n- validationStatus must be PASS, WARNING, or FAIL.\n- issues must contain strings only.\n- warnings must contain strings only.\n- recommendedAction must be a single string.\n- Do not return JSON Schema.\n- Do not return explanations outside the JSON.\n- Do not use Markdown code fences.\n- Always include all four fields.\n- Do not invent missing information."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        528,
+        -1952
+      ],
+      "id": "4f96b20a-dfc7-496b-9b54-f99348094fa1",
+      "name": "Validation Agent"
+    },
+    {
+      "parameters": {
+        "sendTo": "ak.div234@gmail.com",
+        "subject": "AI Project Manager - Roadmap Review Required",
+        "message": "=\nHello Team,\n\nThe AI Planning Agent has successfully generated the project plan, and the Validation Agent has completed its review.\n\n**VALIDATION SUMMARY**\n\n**Validation Status:** WARNING\n\n**1. Validation Issues**\n\n{{ $json.issues.map((issue, index) => `${index + 1}. ${issue}`).join('\\n\\n\\n\\n') }}\n\n**2. Warnings**\n\n{{ $json.warnings.map((warning, index) => `${index + 1}. ${warning}`).join('\\n\\n\\n\\n') }}\n\n**3. Recommended Actions**\n\n{{ $json.recommendedAction }}\n\n---\n\n**HUMAN APPROVAL REQUIRED**\n\nPlease review the generated project plan and validation findings.\n\n**To approve:** Reply with APPROVE.\n\n**To reject:** Reply with REJECT.\n\n- APPROVE → Proceed with Excel generation and Azure DevOps work item creation.\n- REJECT → Send the plan back to the Planning Agent for revision.\n\nRegards,  \nAI Project Manager\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1744,
+        -1888
+      ],
+      "id": "01347292-e64c-4cd9-8e3d-1edbea307856",
+      "name": "Send a message",
+      "webhookId": "e3de8e09-59e8-4107-b96f-e6949f783fd7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qC18afhpoGcB1534",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "maxResults": 30,
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        1472,
+        -1344
+      ],
+      "id": "33016ced-d3ae-43e9-8baf-477cb836efaf",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "qC18afhpoGcB1534",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "264f54ea-3260-4d5b-ada5-409f08ca89db",
+              "leftValue": "={{ ($json.snippet || '').trim().toLowerCase().startsWith('approve') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1696,
+        -1344
+      ],
+      "id": "084801cd-b548-4ecf-82dc-4f097b5524fa",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "bQFmjw6oGvEvPsSm",
+          "mode": "list",
+          "cachedResultName": "AI_Project_Approvals",
+          "cachedResultUrl": "/projects/LsLPjweO9gR1FrbX/datatables/bQFmjw6oGvEvPsSm"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "approvalId": "={{$execution.id}}",
+            "planningOutput": "=  {{ JSON.stringify($json) }}",
+            "approvalStatus": "Approved"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "approvalId",
+              "displayName": "approvalId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "projectName",
+              "displayName": "projectName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "planningOutput",
+              "displayName": "planningOutput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "validationStatus",
+              "displayName": "validationStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "approvalStatus",
+              "displayName": "approvalStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -96,
+        -1680
+      ],
+      "id": "3382672c-b742-4309-8184-9083bacdfea4",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "bQFmjw6oGvEvPsSm",
+          "mode": "list",
+          "cachedResultName": "AI_Project_Approvals",
+          "cachedResultUrl": "/projects/LsLPjweO9gR1FrbX/datatables/bQFmjw6oGvEvPsSm"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "approvalStatus",
+              "keyValue": "Approved"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1888,
+        -1456
+      ],
+      "id": "f4359a30-fd98-4031-b812-0a9b33ec38fa",
+      "name": "Get row(s)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst raw = $json.planningOutput;\n\nlet parsed;\n\ntry {\n  parsed = typeof raw === 'string'\n    ? JSON.parse(raw.trim())\n    : raw;\n} catch (error) {\n  throw new Error(\n    'Invalid planningOutput JSON: ' + error.message\n  );\n}\n\nconst workItems = parsed.output?.workItems || [];\n\nif (workItems.length === 0) {\n  throw new Error('No work items found in the approved project plan.');\n}\n\nreturn {\n  json: {\n    approvalId: $json.approvalId,\n    approvalStatus: $json.approvalStatus,\n    workItemCount: workItems.length,\n    workItems: workItems\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        -1440
+      ],
+      "id": "7b54e6dd-f800-4163-988a-f73890ad186a",
+      "name": "Parse Approved Project Plan"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst approval = $input.first().json;\n\nreturn approval.workItems.map(item => ({\n  json: {\n    approvalId: approval.approvalId,\n    approvalStatus: approval.approvalStatus,\n    ...item\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2320,
+        -1440
+      ],
+      "id": "d4a199c9-cea1-4e67-b4fe-f4975415c146",
+      "name": "Flatten Work Items"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {
+          "fileName": "Approved_Project_Roadmap"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.2,
+      "position": [
+        2464,
+        -2032
+      ],
+      "id": "18bded48-ef0d-40a1-af75-08871f93cd5a",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "e7499854-a339-44ee-9333-90a74e8ddb79",
+              "leftValue": "={{$json.type}}",
+              "rightValue": "Feature",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        2752,
+        -1360
+      ],
+      "id": "eed57b70-0e92-4def-8cdf-7d04f0628c2f",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10000",
+          "mode": "list",
+          "cachedResultName": "Project Mira"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10001",
+          "mode": "list",
+          "cachedResultName": "Epic"
+        },
+        "summary": "={{$json.title}}",
+        "additionalFields": {
+          "description": "={{$json.description}}"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        2704,
+        -1616
+      ],
+      "id": "bf62056d-18a4-43fa-99ff-42873b4bc1c8",
+      "name": "Create Epic",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "MURLNkwQlVYj1yoc",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "8f78fa65-fae9-444b-ba76-c390f24f498c",
+              "leftValue": "={{$json.type}}",
+              "rightValue": "Epic",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        2512,
+        -1248
+      ],
+      "id": "51b84611-9251-48d3-92ba-5cbfde22624e",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10000",
+          "mode": "list",
+          "cachedResultName": "Project Mira"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10004",
+          "mode": "list",
+          "cachedResultName": "Task"
+        },
+        "summary": "={{$json.title}}",
+        "additionalFields": {
+          "description": "={{$json.description}}"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        2976,
+        -1552
+      ],
+      "id": "8a1db444-dd1a-4341-b049-c13997a86e29",
+      "name": "Create Feature",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "MURLNkwQlVYj1yoc",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "8bcff8db-f99a-4eb4-91c8-10a941866abe",
+              "leftValue": "={{$json.type}}",
+              "rightValue": "User Story",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        2976,
+        -1232
+      ],
+      "id": "330e03dd-165e-4baf-bbd1-130116e0b6b5",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10000",
+          "mode": "list",
+          "cachedResultName": "Project Mira"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10004",
+          "mode": "list",
+          "cachedResultName": "Task"
+        },
+        "summary": "={{$json.title}}",
+        "additionalFields": {
+          "description": "={{$json.description}}"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        3184,
+        -1376
+      ],
+      "id": "1dfe2931-4021-4066-887b-2c39dfbc4d80",
+      "name": "Create an issue",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "MURLNkwQlVYj1yoc",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10000",
+          "mode": "list",
+          "cachedResultName": "Project Mira"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10004",
+          "mode": "list",
+          "cachedResultName": "Task"
+        },
+        "summary": "={{$json.title}}",
+        "additionalFields": {
+          "description": "={{$json.description}}"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        3184,
+        -1152
+      ],
+      "id": "307803e1-cda7-40ee-944f-26fa56f1cc1f",
+      "name": "Create an issue1",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "MURLNkwQlVYj1yoc",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        1184,
+        -880
+      ],
+      "id": "b5361526-623d-45b2-a6bd-7538dad99432",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "options": {
+          "jql": "project = SCRUM ORDER BY updated DESC"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        -928
+      ],
+      "id": "c572f050-74a5-48e6-99a5-304e8bb72842",
+      "name": "Get many issues",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "MURLNkwQlVYj1yoc",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const issues = $input.all();\n\nconst completed = [];\nconst inProgress = [];\nconst blocked = [];\n\nfor (const item of issues) {\n  const issue = item.json;\n  const fields = issue.fields || {};\n\n  const status = fields.status?.name || \"Unknown\";\n\n  const record = {\n    key: issue.key || \"\",\n    summary: fields.summary || \"\",\n    status: status,\n    issueType: fields.issuetype?.name || \"\",\n    priority: fields.priority?.name || \"\",\n    assignee: fields.assignee?.displayName || \"Unassigned\"\n  };\n\n  const statusLower = status.toLowerCase();\n\n  if (\n    statusLower.includes(\"done\") ||\n    statusLower.includes(\"complete\") ||\n    statusLower.includes(\"closed\")\n  ) {\n    completed.push(record);\n  }\n\n  if (\n    statusLower.includes(\"progress\") ||\n    statusLower.includes(\"in progress\")\n  ) {\n    inProgress.push(record);\n  }\n\n  if (statusLower.includes(\"block\")) {\n    blocked.push(record);\n  }\n}\n\nreturn [\n  {\n    json: {\n      project: \"ABCDE AI Adoption\",\n      reportDate: new Date().toISOString().split(\"T\")[0],\n\n      totalIssues: issues.length,\n\n      completedCount: completed.length,\n      inProgressCount: inProgress.length,\n      blockedCount: blocked.length,\n\n      completed,\n      inProgress,\n      blocked,\n\n      upcomingMilestones: []\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1968,
+        -928
+      ],
+      "id": "89c759b1-fb0c-43a0-a37f-713efb446616",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate the weekly status report using the following Jira project data:\n\n{{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "systemMessage": "You are an AI Technical Program Manager responsible for preparing a weekly project status report.\n\nAnalyze the Jira project data provided in the user message.\n\nGenerate a concise stakeholder-ready weekly status report with these sections:\n\n1. Executive Summary\n2. Overall Health\n3. Tasks Completed\n4. Tasks In Progress\n5. Blocked Items\n6. Upcoming Milestones\n7. Key Risks / Concerns\n8. Recommended Actions\n\nUse only the information provided in the Jira data.\n\nDo not invent tasks, milestones, risks, dates, owners, or project information.\n\nFor Overall Health:\n- GREEN = project is progressing normally with no significant blockers.\n- AMBER = there are blockers, delivery concerns, or items requiring PM attention.\n- RED = there are critical blockers or significant delivery concerns.\n\nIf milestone information is not available, state:\n\"Milestone information is not available from the current Jira data.\"\n\nIf risk information is not available, state:\n\"Risk information is not available from the current Jira data.\"\n\nKeep the report concise and suitable for project stakeholders.\n\n\nThe overallHealth field is calculated by the workflow and must not be changed.\n\nUse the provided overallHealth value exactly as supplied.\n\nExplain the reasons for the health status using the Jira data."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2192,
+        -928
+      ],
+      "id": "6c696cb9-147b-49c7-9c33-2b8839928727",
+      "name": "Weekly Status Report Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2064,
+        -720
+      ],
+      "id": "03e54b26-116c-4713-b562-ad9c28edbe20",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\n\nlet overallHealth = \"GREEN\";\n\nif (data.blockedCount >= 2) {\n  overallHealth = \"RED\";\n} else if (data.blockedCount === 1) {\n  overallHealth = \"AMBER\";\n} else if (\n  data.inProgressCount > data.completedCount &&\n  data.totalIssues > 0\n) {\n  overallHealth = \"AMBER\";\n}\n\nreturn [\n  {\n    json: {\n      ...data,\n      overallHealth\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2560,
+        -928
+      ],
+      "id": "0b178607-8b02-444c-a765-c890d4a255e5",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const issues = $input.all();\n\nconst seen = new Set();\nconst duplicates = [];\nconst unique = [];\n\nfor (const item of issues) {\n  const key = item.json.key;\n\n  if (seen.has(key)) {\n    duplicates.push(key);\n  } else {\n    seen.add(key);\n    unique.push(key);\n  }\n}\n\nreturn [{\n  json: {\n    totalIssues: issues.length,\n    uniqueIssues: unique.length,\n    duplicateCount: duplicates.length,\n    duplicateKeys: duplicates\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        -928
+      ],
+      "id": "cfe3af22-c25b-484e-9041-21a58c7a8489",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst item = $input.first().json;\n\nlet planningOutput = item.output ?? item;\n\n// If output is a string, remove Markdown code fences\nif (typeof planningOutput === \"string\") {\n  planningOutput = planningOutput\n    .replace(/^```(?:json)?\\s*/i, \"\")\n    .replace(/\\s*```$/, \"\")\n    .trim();\n\n  planningOutput = JSON.parse(planningOutput);\n}\n\n// Handle nested output\nif (planningOutput.output) {\n  planningOutput = planningOutput.output;\n}\n\nconst workItems = planningOutput.workItems ?? [];\n\nfunction randomHex(length) {\n  let result = \"\";\n  while (result.length < length) {\n    result += Math.floor(Math.random() * 16).toString(16);\n  }\n  return result.slice(0, length);\n}\n\nconst traceId = randomHex(32);\nconst spanId = randomHex(16);\n\nconst endTime = BigInt(Date.now()) * 1000000n;\nconst startTime = endTime - 1000000000n;\n\nfunction stringAttribute(key, value) {\n  return {\n    key,\n    value: { stringValue: String(value) }\n  };\n}\n\nfunction intAttribute(key, value) {\n  return {\n    key,\n    value: { intValue: String(value) }\n  };\n}\n\nconst payload = {\n  resourceSpans: [{\n    resource: {\n      attributes: [\n        stringAttribute(\"service.name\", \"n8n\"),\n        stringAttribute(\"project.name\", \"ABCDE Ltd. AI Adoption\")\n      ]\n    },\n    scopeSpans: [{\n      scope: {\n        name: \"n8n-manual-langfuse-tracing\",\n        version: \"1.0.0\"\n      },\n      spans: [{\n        traceId,\n        spanId,\n        name: \"Planning Agent\",\n        kind: 1,\n        startTimeUnixNano: startTime.toString(),\n        endTimeUnixNano: endTime.toString(),\n        attributes: [\n          stringAttribute(\n            \"langfuse.trace.name\",\n            \"ABCDE AI Adoption - Planning Agent\"\n          ),\n          stringAttribute(\"langfuse.observation.type\", \"agent\"),\n          stringAttribute(\n            \"langfuse.observation.output\",\n            JSON.stringify(planningOutput)\n          ),\n          stringAttribute(\"gen_ai.operation.name\", \"invoke_agent\"),\n          stringAttribute(\"gen_ai.agent.name\", \"Planning Agent\"),\n          intAttribute(\"planning.work_item_count\", workItems.length)\n        ],\n        status: { code: 1 }\n      }]\n    }]\n  }]\n};\n\nreturn [{ json: payload }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        -2128
+      ],
+      "id": "ed9c2c62-75af-47c8-b2aa-b0836086897c",
+      "name": "Prepare Planning Agent Trace"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.langfuse.com/api/public/otel/v1/traces",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-langfuse-ingestion-version",
+              "value": "4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        96,
+        -2128
+      ],
+      "id": "972515eb-dd76-449e-a3b4-3889cde6f762",
+      "name": "Send Planning Trace to Langfuse",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "ULDo6PEBcJDJX9mv",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// Read outputs directly from the three agent nodes\nfunction getAgentOutput(nodeName) {\n  let data = $(nodeName).first().json;\n\n  // Unwrap nested output and parse JSON strings\n  for (let i = 0; i < 4; i++) {\n    if (typeof data === \"string\") {\n      data = data\n        .replace(/^```(?:json)?\\s*/i, \"\")\n        .replace(/\\s*```$/, \"\")\n        .trim();\n      data = JSON.parse(data);\n      continue;\n    }\n\n    if (Array.isArray(data) && data.length === 1) {\n      data = data[0];\n      continue;\n    }\n\n    if (data && typeof data === \"object\" && data.output !== undefined) {\n      data = data.output;\n      continue;\n    }\n\n    break;\n  }\n\n  return data;\n}\n\nconst planning = getAgentOutput(\"Planning Agent\");\nconst risk = getAgentOutput(\"Risk Agent\");\nconst validation = getAgentOutput(\"Validation Agent\");\n\n// Find arrays such as risks, issues and warnings, including nested arrays\nfunction findArray(obj, possibleKeys) {\n  if (!obj || typeof obj !== \"object\") return [];\n\n  for (const key of possibleKeys) {\n    if (Array.isArray(obj[key])) return obj[key];\n  }\n\n  for (const value of Object.values(obj)) {\n    if (value && typeof value === \"object\") {\n      const result = findArray(value, possibleKeys);\n      if (result.length) return result;\n    }\n  }\n\n  return [];\n}\n\nconst workItems = findArray(planning, [\"workItems\", \"work_items\"]);\nconst risks = findArray(risk, [\"risks\", \"riskRegister\", \"identifiedRisks\"]);\nconst issues = findArray(validation, [\"issues\"]);\nconst warnings = findArray(validation, [\"warnings\"]);\n\nconst validationStatus =\n  validation.validationStatus ??\n  validation.validation_status ??\n  validation.status ??\n  \"Not Provided\";\n\n// Generate one shared trace ID\nfunction randomHex(length) {\n  let result = \"\";\n  while (result.length < length) {\n    result += Math.floor(Math.random() * 16).toString(16);\n  }\n  return result.slice(0, length);\n}\n\nconst traceId = randomHex(32);\nconst endTime = BigInt(Date.now()) * 1000000n;\nconst startTime = endTime - 1000000n;\n\nfunction stringAttribute(key, value) {\n  return {\n    key,\n    value: { stringValue: String(value) }\n  };\n}\n\nfunction intAttribute(key, value) {\n  return {\n    key,\n    value: { intValue: String(value) }\n  };\n}\n\nfunction makeSpan(name, agentOutput, extraAttributes = []) {\n  return {\n    traceId,\n    spanId: randomHex(16),\n    name,\n    kind: 1,\n    startTimeUnixNano: startTime.toString(),\n    endTimeUnixNano: endTime.toString(),\n    attributes: [\n      stringAttribute(\n        \"langfuse.trace.name\",\n        \"ABCDE AI Adoption - Consolidated Agent Observability\"\n      ),\n      stringAttribute(\"langfuse.observation.type\", \"agent\"),\n      stringAttribute(\n        \"langfuse.observation.output\",\n        JSON.stringify(agentOutput)\n      ),\n      stringAttribute(\"gen_ai.operation.name\", \"invoke_agent\"),\n      stringAttribute(\"gen_ai.agent.name\", name),\n      ...extraAttributes\n    ],\n    status: { code: 1 }\n  };\n}\n\nconst spans = [\n  makeSpan(\"Planning Agent\", planning, [\n    intAttribute(\"planning.work_item_count\", workItems.length)\n  ]),\n\n  makeSpan(\"Risk Agent\", risk, [\n    intAttribute(\"risk.count\", risks.length)\n  ]),\n\n  makeSpan(\"Validation Agent\", validation, [\n    stringAttribute(\"validation.status\", validationStatus),\n    intAttribute(\"validation.issue_count\", issues.length),\n    intAttribute(\"validation.warning_count\", warnings.length)\n  ])\n];\n\nconst payload = {\n  resourceSpans: [{\n    resource: {\n      attributes: [\n        stringAttribute(\"service.name\", \"n8n\"),\n        stringAttribute(\"project.name\", \"ABCDE Ltd. AI Adoption\")\n      ]\n    },\n    scopeSpans: [{\n      scope: {\n        name: \"n8n-consolidated-observability\",\n        version: \"1.0.0\"\n      },\n      spans\n    }]\n  }]\n};\n\nreturn [{ json: payload }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -1952
+      ],
+      "id": "bbad705b-61ef-408d-a624-e4e4715c4c72",
+      "name": "Prepare Consolidated Observability Trace"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.langfuse.com/api/public/otel/v1/traces",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-langfuse-ingestion-version",
+              "value": "4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        -1952
+      ],
+      "id": "56485dd8-0d86-4002-aa6d-34800ea9417e",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "ULDo6PEBcJDJX9mv",
+          "name": "Unnamed credential"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {},
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Project Context Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Planning Agent": {
+      "main": [
+        [
+          {
+            "node": "Prepare Planning Agent Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Project Context Agent": {
+      "main": [
+        [
+          {
+            "node": "Planning Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Prepare Project code input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Project code input": {
+      "main": [
+        [
+          {
+            "node": "Project Context Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Planning Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Planning Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Risk Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risk Agent": {
+      "main": [
+        [
+          {
+            "node": "Prepare Validation Input code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Risk Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Validation Input code": {
+      "main": [
+        [
+          {
+            "node": "Validation Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Validation Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Check PASS Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check PASS Status": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check Warning status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Warning status": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation Agent": {
+      "main": [
+        [
+          {
+            "node": "Prepare Consolidated Observability Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Risk Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Parse Approved Project Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Approved Project Plan": {
+      "main": [
+        [
+          {
+            "node": "Flatten Work Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten Work Items": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        []
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Create Feature",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Epic": {
+      "main": [
+        []
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Create Epic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Create an issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create an issue1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many issues": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Weekly Status Report Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Weekly Status Report Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Status Report Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Planning Agent Trace": {
+      "main": [
+        [
+          {
+            "node": "Send Planning Trace to Langfuse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Planning Trace to Langfuse": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Consolidated Observability Trace": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ed3308a1-3177-4817-96c4-ee26417ab317",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7a2f5b804f01d28db42ccd5e60dbe2c25535b623c3497a749c99b2bd391fc774"
+  },
+  "nodeGroups": [],
+  "id": "bCe0jcliE58IS5ji",
+  "tags": []
+}
